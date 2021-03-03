@@ -32,9 +32,20 @@ import {
   uuidBase36Half
 } from "./utils/efact-util"
 import { timeEncode } from "./utils/formatting-util"
-import { fhcEfactControllerApi, EfactSendResponse } from "fhc-api"
+import {
+  DmgClosure,
+  DmgExtension,
+  DmgsList,
+  EfactMessage,
+  EfactSendResponse,
+  ErrorDetail,
+  fhcEfactApi,
+  GenAsyncResponse,
+  HcpartyType,
+  IDHCPARTY
+} from "@taktik/fhc-api"
 import { utils } from "./crypto/utils"
-import { EfactMessage } from "fhc-api"
+
 import {
   EfactMessage920098Reader,
   EfactMessage920099Reader,
@@ -48,15 +59,9 @@ import {
   ET92Data,
   File920900Data
 } from "./utils/efact-parser"
-import { ErrorDetail } from "fhc-api"
+
 import { IccReceiptXApi } from "./icc-receipt-x-api"
-import { DmgsList } from "fhc-api"
-import { DmgClosure } from "fhc-api"
-import { DmgExtension } from "fhc-api"
 import { IccPatientXApi } from "./icc-patient-x-api"
-import { HcpartyType } from "fhc-api"
-import { IDHCPARTY } from "fhc-api"
-import { GenAsyncResponse } from "fhc-api"
 
 interface StructError {
   itemId: string | null
@@ -66,6 +71,7 @@ interface StructError {
 
 class EfactSendResponseWithError extends EfactSendResponse {
   public error: string | undefined
+
   constructor(json: JSON) {
     super(json)
   }
@@ -880,7 +886,6 @@ export class IccMessageXApi extends iccMessageApi {
               const rejectAll = (statuses & (1 << 17)) /*STATUS_ERROR*/ > 0
 
               let promise: Promise<Array<InvoiceDto>> = Promise.resolve([])
-
               _.forEach(invoices, iv => {
                 let newInvoicePromise: Promise<InvoiceDto> | null = null
                 promise = promise.then(invoices => {
@@ -896,7 +901,6 @@ export class IccMessageXApi extends iccMessageApi {
                     if (ic.canceled || ic.accepted) {
                       return
                     }
-
                     // Error from the ET50/51/52 linked to the invoicingCode
                     const codeError =
                       _(invoicingErrors)
@@ -1058,7 +1062,7 @@ export class IccMessageXApi extends iccMessageApi {
     xFHCKeystoreId: string,
     xFHCTokenId: string,
     xFHCPassPhrase: string,
-    efactApi: fhcEfactControllerApi,
+    efactApi: fhcEfactApi,
     fhcServer: string | undefined = undefined,
     prefixer?: (fed: InsuranceDto, hcpId: string) => Promise<string>,
     isConnectedAsPmg: boolean = false,
@@ -1128,8 +1132,8 @@ export class IccMessageXApi extends iccMessageApi {
                 }
                 return { error: errorMessage }
               })
-              .then((res: EfactSendResponseWithError) => {
-                if (res.success || res.error) {
+              .then((res: EfactSendResponse | { error: any }) => {
+                if ((res as any).success || (res as any).error) {
                   let promise = Promise.resolve(null)
                   let totalAmount = 0
                   _.forEach(invoices, iv => {
@@ -1169,7 +1173,8 @@ export class IccMessageXApi extends iccMessageApi {
                         Object.assign(message, {
                           sent: sentDate,
                           status:
-                            (message.status || 0) | (res.success ? 1 << 7 : 0) /*STATUS_SENT*/,
+                            (message.status || 0) |
+                            ((res as any).success ? 1 << 7 : 0) /*STATUS_SENT*/,
                           metas: {
                             ioFederationCode: batch.ioFederationCode,
                             numericalRef: batch.numericalRef,
@@ -1177,15 +1182,15 @@ export class IccMessageXApi extends iccMessageApi {
                             invoiceYear: _.padStart("" + batch.invoicingYear, 4, "0"),
                             totalAmount: totalAmount,
                             fhc_server: fhcServer,
-                            errors: res.error
+                            errors: (res as any).error
                           }
                         })
                       )
                     )
                     .then((msg: MessageDto) => {
-                      if (res.success) {
+                      if ((res as any).success) {
                         // Continue even if error ...
-                        this.saveMessageAttachment(user, msg, res)
+                        this.saveMessageAttachment(user, msg, res as EfactSendResponseWithError)
                       }
                       return msg
                     })

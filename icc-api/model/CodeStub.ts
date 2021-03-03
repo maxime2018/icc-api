@@ -10,16 +10,17 @@
  * Do not edit the class manually.
  */
 
-/**
- * Status showing whether the message is read or not and the time of reading
- */
 import { decodeBase64 } from "./ModelHelper"
 
-export class MessageReadStatusDto {
+export class CodeStub {
   constructor(json: JSON | any) {
-    Object.assign(this as MessageReadStatusDto, json)
+    Object.assign(this as CodeStub, json)
   }
 
-  time?: number
-  read?: boolean
+  id?: string
+  context?: string
+  type?: string
+  code?: string
+  version?: string
+  label?: { [key: string]: string }
 }

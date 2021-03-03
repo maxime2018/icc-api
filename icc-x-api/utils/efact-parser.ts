@@ -1,7 +1,6 @@
-import { EfactMessage } from "fhc-api"
-import { ErrorDetail } from "fhc-api"
-import { Record } from "fhc-api"
-import _ from "lodash"
+import { EfactMessage } from "@taktik/fhc-api"
+import { ErrorDetail } from "@taktik/fhc-api"
+import { Record } from "@taktik/fhc-api"
 
 export interface Zone200Data extends ETData {
   isTest: boolean
@@ -1269,7 +1268,7 @@ export abstract class EfactMessageReader {
     this.log("code d'erreur", zone400.zones!![i++].value)
     this.log("reserve", zone400.zones!![i++].value)
 
-    if (!mutuelle || !signMontantA || !montantDemandeA || !controleMut) {
+    if (zone400.zones!!.length !== i) {
       throw Error("Zone 400: The parsing is not matching the available number of zones.")
     }
 
@@ -1286,13 +1285,16 @@ export abstract class EfactMessageReader {
     this.log("Type", zone500.zones!![i++].value)
     this.log("Code d'erreur", zone500.zones!![i++].value)
     this.log("numero de mutuelle", zone500.zones!![i++].value)
+    const mutuelle = zone500.zones!![i - 1].value
     this.log("code d'erreur", zone500.zones!![i++].value)
     this.log("non utlise", zone500.zones!![i++].value)
     this.log("code d'erreur", zone500.zones!![i++].value)
     this.log("numero de la facture recapitulative", zone500.zones!![i++].value)
     this.log("code d'erreur", zone500.zones!![i++].value)
     this.log("signe montant demande compte A", zone500.zones!![i++].value)
+    const signMontantA = zone500.zones!![i - 1].value
     this.log("montant demande compte A", zone500.zones!![i++].value)
+    const montantDemandeA = zone500.zones!![i - 1].value
     this.log("code d'erreur", zone500.zones!![i++].value)
     this.log("signe montant demande compte B", zone500.zones!![i++].value)
     this.log("montant demande compte B", zone500.zones!![i++].value)
@@ -1303,31 +1305,11 @@ export abstract class EfactMessageReader {
     this.log("nombre d'enregistrements", zone500.zones!![i++].value)
     this.log("code d'erreur", zone500.zones!![i++].value)
     this.log("numero de controle par mutualite", zone500.zones!![i++].value)
+    const controleMut = zone500.zones!![i - 1].value
     this.log("code d'erreur", zone500.zones!![i++].value)
     this.log("reserve", zone500.zones!![i++].value)
 
-    const mutuelle = _.get(
-      _.get(zone500, "zones", [])!.find(z => _.get(z, "zone", null) === "501"),
-      "value",
-      null
-    )
-    const signMontantA = _.get(
-      _.get(zone500, "zones", [])!.find(z => _.get(z, "zone", null) === "503"),
-      "value",
-      null
-    )
-    const montantDemandeA = _.get(
-      _.get(zone500, "zones", [])!.find(z => _.get(z, "zone", null) === "504"),
-      "value",
-      null
-    )
-    const controleMut = _.get(
-      _.get(zone500, "zones", [])!.find(z => _.get(z, "zone", null) === "510"),
-      "value",
-      null
-    )
-
-    if (!mutuelle || !signMontantA || !montantDemandeA || !controleMut) {
+    if (zone500.zones!!.length !== i) {
       throw Error("Zone 500: The parsing is not matching the available number of zones.")
     }
 
